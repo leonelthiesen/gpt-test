@@ -1,71 +1,83 @@
-import { useCallback, useEffect, useState } from 'react'
-import Button from '../components/Button'
-import ClickCount from '../components/ClickCount'
-import styles from '../styles/home.module.css'
+import { useState } from 'react';
+import styles from '../styles/home.module.css';
+import { AppBar, Toolbar, Typography, Button, IconButton, TextareaAutosize } from '@material-ui/core';
+import MenuIcon from '@material-ui/icons/Menu';
 
-function throwError() {
-  console.log(
-    // The function body() is not defined
-    document.body()
-  )
-}
+export default function RecipeInfo() {
+  const [recipe, setRecipe] = useState("");
+  const [nutrition, setNutrition] = useState("");
 
-function Home() {
-  const [count, setCount] = useState(0)
-  const increment = useCallback(() => {
-    setCount((v) => v + 1)
-  }, [setCount])
+  const handleChange = (event) => {
+    setRecipe(event.target.value);
+  }
 
-  useEffect(() => {
-    const r = setInterval(() => {
-      increment()
-    }, 1000)
+  const handleClear = () => {
+    setRecipe("");
+    setNutrition("");
+  }
 
-    return () => {
-      clearInterval(r)
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const response = await fetch('http://localhost:8080/openai/generateinfo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ recipe: recipe })
+    });
+
+    const jsonResponse = await response.json();
+
+    if (jsonResponse.success) {
+      setNutrition(jsonResponse.data);
     }
-  }, [increment])
+  }
 
   return (
-    <main className={styles.main}>
-      <h1>Fast Refresh Demo</h1>
-      <p>
-        Fast Refresh is a Next.js feature that gives you instantaneous feedback
-        on edits made to your React components, without ever losing component
-        state.
-      </p>
-      <hr className={styles.hr} />
-      <div>
-        <p>
-          Auto incrementing value. The counter won't reset after edits or if
-          there are errors.
-        </p>
-        <p>Current value: {count}</p>
+    <main>
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" style={{ flexGrow: 1 }}>
+            Nutrition Facts
+          </Typography>
+          <IconButton edge="end" color="inherit" aria-label="menu">
+            <MenuIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+      <div className={styles.content}>
+        <h1>Find Nutrition Facts for any recipe</h1>
+        <form onSubmit={handleSubmit}>
+          <TextareaAutosize value={recipe} onChange={handleChange}
+            placeholder="Enter recipe to get nutrition facts"
+            style={{
+              width: "98%",
+              maxWidth: "850px",
+              minHeight: "200px",
+              padding: "10px",
+            }} />
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+          >
+            Submit
+          </Button>
+          <br />
+          <Button
+            style={{ marginTop: "10px" }}
+            variant="contained"
+            color="secondary"
+            onClick={handleClear}
+          >
+            Clear
+          </Button>
+        </form>
+        <div>
+          <p>Nutrition Facts:</p>
+          <p>{nutrition}</p>
+        </div>
       </div>
-      <hr className={styles.hr} />
-      <div>
-        <p>Component with state.</p>
-        <ClickCount />
-      </div>
-      <hr className={styles.hr} />
-      <div>
-        <p>
-          The button below will throw 2 errors. You'll see the error overlay to
-          let you know about the errors but it won't break the page or reset
-          your state.
-        </p>
-        <Button
-          onClick={(e) => {
-            setTimeout(() => document.parentNode(), 0)
-            throwError()
-          }}
-        >
-          Throw an Error
-        </Button>
-      </div>
-      <hr className={styles.hr} />
     </main>
   )
 }
-
-export default Home
